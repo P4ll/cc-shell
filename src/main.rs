@@ -25,7 +25,7 @@ fn main() -> Result<()> {
             break;
         }
 
-        exec_cmd(cmd, &path_envs);
+        exec_cmd(cmd, &path_envs)?;
         input.clear();
     }
     Ok(())

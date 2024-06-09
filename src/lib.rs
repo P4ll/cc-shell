@@ -4,6 +4,8 @@ use std::fs;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::process;
+use std::env;
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub enum Cmd<'a> {
@@ -11,6 +13,7 @@ pub enum Cmd<'a> {
     CmdNotFound(&'a str),
     Echo(&'a str),
     Type(&'a str),
+    Pwd,
 }
 
 impl<'a> fmt::Display for Cmd<'a> {
@@ -19,6 +22,7 @@ impl<'a> fmt::Display for Cmd<'a> {
             Cmd::Exit => write!(f, "exit"),
             Cmd::Echo(_) => write!(f, "echo"),
             Cmd::Type(_) => write!(f, "type"),
+            Cmd::Pwd => write!(f, "pwd"),
             _ => unreachable!(),
         }
     }
@@ -33,6 +37,7 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
             "echo" => return Cmd::Echo(&cmd[pos + 1..]),
             "type" => return Cmd::Type(&cmd[pos + 1..]),
             "exit" => return Cmd::Exit,
+            "pwd" => return Cmd::Pwd,
             _ => {}
         }
     } else {
@@ -40,6 +45,7 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
             "echo" => return Cmd::Echo(""),
             "type" => return Cmd::Type(""),
             "exit" => return Cmd::Exit,
+            "pwd" => return Cmd::Pwd,
             _ => {}
         }
     }
@@ -50,8 +56,12 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
     }
 }
 
-pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) {
+pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) -> Result<()> {
     match cmd {
+        Cmd::Pwd => {
+            let cur_dir = env::current_dir()?;
+            println!("{}", cur_dir.display());
+        },
         Cmd::CmdNotFound(inp) => exec_not_found(inp, env_paths),
         Cmd::Echo(inp) => println!("{}", inp),
         Cmd::Exit => unreachable!(),
@@ -59,6 +69,7 @@ pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) {
             exec_type_cmd(inp, env_paths);
         }
     }
+    Ok(())
 }
 
 fn exec_not_found(inp: &str, env_paths: &[&str]) {
