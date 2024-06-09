@@ -3,6 +3,7 @@ use std::fmt;
 use std::fs;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::process;
 
 #[derive(Debug, Clone)]
 pub enum Cmd<'a> {
@@ -51,12 +52,34 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
 
 pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) {
     match cmd {
-        Cmd::CmdNotFound(inp) => println!("{}: command not found", inp.trim()),
+        Cmd::CmdNotFound(inp) => exec_not_found(inp, env_paths),
         Cmd::Echo(inp) => println!("{}", inp),
         Cmd::Exit => unreachable!(),
         Cmd::Type(inp) => {
             exec_type_cmd(inp, env_paths);
         }
+    }
+}
+
+fn exec_not_found(inp: &str, env_paths: &[&str]) {
+    let first_space = inp.find(' ');
+    let mut idx = inp.len();
+    if let Some(ff) = first_space {
+        idx = ff;
+    }
+    let founded_exe = get_in_path(env_paths, &inp[..idx]);
+    match founded_exe {
+        Some(pp) => {
+            let mut args = inp.split_ascii_whitespace();
+            // skip prog name
+            args.next();
+
+            process::Command::new(pp)
+                .args(args)
+                .status()
+                .expect("failed to execute process");
+        }
+        None => println!("{}: command not found", inp.trim()),
     }
 }
 
