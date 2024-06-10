@@ -1,11 +1,11 @@
+use anyhow::Result;
+use std::env;
 #[allow(unused_imports)]
 use std::fmt;
 use std::fs;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::process;
-use std::env;
-use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub enum Cmd<'a> {
@@ -65,16 +65,21 @@ pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) -> Result<()> {
         Cmd::Pwd => {
             let cur_dir = env::current_dir()?;
             println!("{}", cur_dir.display());
-        },
+        }
         Cmd::Cd(inp) => {
-            let res = env::set_current_dir(inp);
+            let home_dir = env::var("HOME")?;
+            let res = env::set_current_dir(if inp[..1] == *"~" {
+                format!("{}/{}", home_dir, &inp[1..])
+            } else {
+                inp.into()
+            });
             match res {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(_) => {
                     println!("cd: {inp}: No such file or directory")
                 }
             }
-        },
+        }
         Cmd::CmdNotFound(inp) => exec_not_found(inp, env_paths),
         Cmd::Echo(inp) => println!("{}", inp),
         Cmd::Exit => unreachable!(),
