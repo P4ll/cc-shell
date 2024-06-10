@@ -13,6 +13,7 @@ pub enum Cmd<'a> {
     CmdNotFound(&'a str),
     Echo(&'a str),
     Type(&'a str),
+    Cd(&'a str),
     Pwd,
 }
 
@@ -23,6 +24,7 @@ impl<'a> fmt::Display for Cmd<'a> {
             Cmd::Echo(_) => write!(f, "echo"),
             Cmd::Type(_) => write!(f, "type"),
             Cmd::Pwd => write!(f, "pwd"),
+            Cmd::Cd(_) => write!(f, "cd"),
             _ => unreachable!(),
         }
     }
@@ -36,6 +38,7 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
         match &cmd[..pos] {
             "echo" => return Cmd::Echo(&cmd[pos + 1..]),
             "type" => return Cmd::Type(&cmd[pos + 1..]),
+            "cd" => return Cmd::Cd(&cmd[pos + 1..]),
             "exit" => return Cmd::Exit,
             "pwd" => return Cmd::Pwd,
             _ => {}
@@ -44,6 +47,7 @@ pub fn parse_cmd(cmd: &str) -> Cmd {
         match cmd {
             "echo" => return Cmd::Echo(""),
             "type" => return Cmd::Type(""),
+            "cd" => return Cmd::Cd(""),
             "exit" => return Cmd::Exit,
             "pwd" => return Cmd::Pwd,
             _ => {}
@@ -61,6 +65,15 @@ pub fn exec_cmd(cmd: Cmd, env_paths: &[&str]) -> Result<()> {
         Cmd::Pwd => {
             let cur_dir = env::current_dir()?;
             println!("{}", cur_dir.display());
+        },
+        Cmd::Cd(inp) => {
+            let res = env::set_current_dir(inp);
+            match res {
+                Ok(_) => {},
+                Err(_) => {
+                    println!("cd: {inp}: No such file or directory")
+                }
+            }
         },
         Cmd::CmdNotFound(inp) => exec_not_found(inp, env_paths),
         Cmd::Echo(inp) => println!("{}", inp),
